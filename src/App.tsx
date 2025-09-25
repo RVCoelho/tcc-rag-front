@@ -1,24 +1,40 @@
 import React from 'react';
-import logo from './logo.svg';
+import { Sidebar } from './components/Sidebar';
+import { ChatArea } from './components/ChatArea';
+import { useChat } from './hooks/useChat';
 import './App.css';
 
 function App() {
+  const {
+    chats,
+    currentChatId,
+    isLoading,
+    createNewChat,
+    selectChat,
+    sendMessage,
+    getCurrentChat,
+    deleteChat,
+  } = useChat();
+
+  const handleSendMessage = async (text: string) => {
+    await sendMessage(text);
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app">
+      <Sidebar
+        chats={chats}
+        currentChatId={currentChatId}
+        onNewChat={() => createNewChat()}
+        onSelectChat={selectChat}
+        onDeleteChat={deleteChat}
+      />
+      <ChatArea
+        currentChat={getCurrentChat()}
+        isLoading={isLoading}
+        onSendMessage={handleSendMessage}
+        onCreateChat={createNewChat}
+      />
     </div>
   );
 }
