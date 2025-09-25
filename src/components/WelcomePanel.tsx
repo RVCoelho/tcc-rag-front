@@ -3,7 +3,7 @@ import { InputArea } from './InputArea';
 import './ChatArea.css';
 
 interface WelcomePanelProps {
-  onCreateChat?: (title?: string) => string;
+  onCreateChat?: (title?: string, initialMessage?: string) => string;
   onSendMessage?: (message: string) => void;
   isLoading?: boolean;
 }
@@ -43,9 +43,11 @@ export const WelcomePanel: React.FC<WelcomePanelProps> = ({
     <div className="welcome-screen">
       <div className="welcome-content">
         <h1>Chat RAG FII</h1>
-        <p>Olá! Sou seu assistente de RAG (Retrieval Augmented Generation).</p>
-        <p>Faça uma pergunta e eu buscarei informações relevantes para te ajudar!</p>
 
+        <p className="welcome-context">
+          Olá! Sou seu assistente de RAG (Retrieval Augmented Generation). Tenho contexto sobre diversos fundos de investimento — rendimentos, vacância, inadimplência, VPC, pipeline de aquisições/desinvestimentos, cronograma de contratos, alavancagem, entre outros — e uso esse contexto para formular respostas relevantes. Faça uma pergunta e eu buscarei informações úteis para te ajudar!
+        </p>
+            {/* TO-DO: adicionar opção de visualizar os fundos (precisa de endpoint do back) */}
         <div className="example-questions">
           <p>Exemplos de perguntas que você pode fazer:</p>
           <ul>
