@@ -25,19 +25,9 @@ export const useChat = () => {
       updatedAt: now,
     };
 
-    const contextMessage: Message = {
-      id: generateId(),
-      content:
-        'Contexto: este assistente possui informações e contexto sobre diversos fundos de investimento (rendimentos, vacância, inadimplência, VPC, pipeline de aquisições/desinvestimentos, cronograma de contratos, alavancagem, entre outros) e usará esse contexto para formular respostas relevantes.',
-      isUser: false,
-      timestamp: now,
-      createdAt: now.toISOString(),
-      role: 'assistant',
-    };
-
-    setChats(prev => [{ ...newChat, messages: [contextMessage] }, ...prev]);
+    setChats(prev => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
-
+    
     if (initialMessage && initialMessage.trim()) {
       const userMessage: Message = {
         id: generateId(),
