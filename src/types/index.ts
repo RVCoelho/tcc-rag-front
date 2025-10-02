@@ -1,12 +1,12 @@
-export type Message = {
+export interface Message {
   id: string;
-  content: string;
-  createdAt: String;
   role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  source?: 'llm' | 'rag' | 'method3'; // identifica qual método gerou a resposta
   isUser?: boolean;
   timestamp?: Date;
-  source?: 'llm' | 'rag';
-};
+}
 
 export interface Chat {
   id: string;
@@ -14,8 +14,4 @@ export interface Chat {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface APIResponse {
-  answer: string;
 }

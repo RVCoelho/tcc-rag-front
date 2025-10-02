@@ -1,16 +1,15 @@
 import React, { useRef, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
 import { Chat } from '../types';
-import { Message } from './Message';
 import { InputArea } from './InputArea';
 import { WelcomePanel } from './WelcomePanel';
+import { ComparisonView } from './ComparisonView';
 import './ChatArea.css';
 
 interface ChatAreaProps {
   currentChat: Chat | undefined;
   isLoading: boolean;
   onSendMessage: (message: string) => void;
-  onCreateChat: (title?: string) => string;
+  onCreateChat: (title?: string, initialMessage?: string) => string;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -66,35 +65,11 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
 
   return (
     <div className="chat-area">
-      <div className="messages-container" ref={containerRef}>
-        {currentChat.messages.length === 0 ? (
-          <WelcomePanel onSendMessage={onSendMessage} isLoading={isLoading} />
-        ) : (
-          <>
-            <div ref={topSpacerRef} />
-            {currentChat.messages.map((message) => (
-              <Message key={message.id} message={message} />
-            ))}
-          </>
-        )}
-        
-        {isLoading && (
-          <div className="loading-message">
-            <div className="message assistant-message">
-              <div className="message-avatar">
-                <Loader2 size={20} className="animate-spin" />
-              </div>
-              <div className="message-content">
-                <div className="message-text">
-                  Pensando...
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
+      {currentChat.messages.length === 0 ? (
+        <WelcomePanel onSendMessage={onSendMessage} isLoading={isLoading} />
+      ) : (
+        <ComparisonView messages={currentChat.messages} isLoading={isLoading} />
+      )}
 
       {currentChat && currentChat.messages.length > 0 && (
         <InputArea onSendMessage={onSendMessage} isLoading={isLoading} />
