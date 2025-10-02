@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Chat, Message } from '../types';
-import { getLanguageInstruction } from '../services/languageService';
 import { apiService } from '../services/api';
+import { getLanguageInstruction } from '../services/languageService';
 
 export const useChat = () => {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -27,7 +27,7 @@ export const useChat = () => {
 
     setChats(prev => [newChat, ...prev]);
     setCurrentChatId(newChat.id);
-    
+
     if (initialMessage && initialMessage.trim()) {
       const userMessage: Message = {
         id: generateId(),
@@ -40,54 +40,48 @@ export const useChat = () => {
 
       setChats(prev =>
         prev.map(chat =>
-          chat.id === newChat.id ? { ...chat, messages: [...chat.messages, userMessage], updatedAt: new Date() } : chat
+          chat.id === newChat.id ? { ...chat, messages: [userMessage], updatedAt: new Date() } : chat
         )
       );
 
       (async () => {
         setIsLoading(true);
-        try {
-          let response: string | null = null;
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              response = await apiService.queryRAG(buildRequest(initialMessage));
-              break;
-            } catch (err) {
-              if (attempt === 1) throw err;
-            }
-          }
 
-          const assistantMessage: Message = {
-            id: generateId(),
-            content: response ?? '',
-            isUser: false,
-            timestamp: new Date(),
-            createdAt: new Date().toISOString(),
-            role: 'assistant',
-          };
+        // chama LLM e RAG em paralelo
+        const [llmResult, ragResult] = await Promise.allSettled([
+          apiService.queryLLM(buildRequest(initialMessage)),
+          apiService.queryRAG(buildRequest(initialMessage)),
+        ]);
 
-          setChats(prev =>
-            prev.map(chat =>
-              chat.id === newChat.id ? { ...chat, messages: [...chat.messages, assistantMessage], updatedAt: new Date() } : chat
-            )
-          );
-        } catch (err) {
-          const errorMessage: Message = {
-            id: generateId(),
-            content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
-            isUser: false,
-            timestamp: new Date(),
-            createdAt: new Date().toISOString(),
-            role: 'assistant',
-          };
-          setChats(prev =>
-            prev.map(chat =>
-              chat.id === newChat.id ? { ...chat, messages: [...chat.messages, errorMessage], updatedAt: new Date() } : chat
-            )
-          );
-        } finally {
-          setIsLoading(false);
-        }
+        const llmMessage: Message = {
+          id: generateId(),
+          content: llmResult.status === 'fulfilled' ? llmResult.value : 'Erro ao obter resposta da LLM',
+          isUser: false,
+          timestamp: new Date(),
+          createdAt: new Date().toISOString(),
+          role: 'assistant',
+          source: 'llm',
+        };
+
+        const ragMessage: Message = {
+          id: generateId(),
+          content: ragResult.status === 'fulfilled' ? ragResult.value : 'Erro ao obter resposta do RAG',
+          isUser: false,
+          timestamp: new Date(),
+          createdAt: new Date().toISOString(),
+          role: 'assistant',
+          source: 'rag',
+        };
+
+        setChats(prev =>
+          prev.map(chat =>
+            chat.id === newChat.id
+              ? { ...chat, messages: [userMessage, llmMessage, ragMessage], updatedAt: new Date() }
+              : chat
+          )
+        );
+
+        setIsLoading(false);
       })();
     }
 
@@ -98,53 +92,17 @@ export const useChat = () => {
     setCurrentChatId(chatId);
   }, []);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!currentChatId) return;
+  const sendMessage = useCallback(
+    async (content: string) => {
+      if (!currentChatId) return;
 
-    const userMessage: Message = {
-      id: generateId(),
-      content,
-      isUser: true,
-      timestamp: new Date(),
-      createdAt: new Date().toISOString(),
-      role: 'user',
-    };
-
-    setChats(prev =>
-      prev.map(chat =>
-        chat.id === currentChatId
-          ? {
-              ...chat,
-              messages: [...chat.messages, userMessage],
-              updatedAt: new Date(),
-              title: chat.messages.length === 0
-                ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
-                : chat.title,
-            }
-          : chat
-      )
-    );
-
-    setIsLoading(true);
-
-    try {
-      let response: string | null = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          response = await apiService.queryRAG(buildRequest(content));
-          break;
-        } catch (err) {
-          if (attempt === 1) throw err;
-        }
-      }
-
-      const assistantMessage: Message = {
+      const userMessage: Message = {
         id: generateId(),
-        content: response ?? '',
-        isUser: false,
+        content,
+        isUser: true,
         timestamp: new Date(),
         createdAt: new Date().toISOString(),
-        role: 'assistant',
+        role: 'user',
       };
 
       setChats(prev =>
@@ -152,20 +110,42 @@ export const useChat = () => {
           chat.id === currentChatId
             ? {
                 ...chat,
-                messages: [...chat.messages, assistantMessage],
+                messages: [...chat.messages, userMessage],
                 updatedAt: new Date(),
+                title:
+                  chat.messages.length === 0
+                    ? content.slice(0, 50) + (content.length > 50 ? '...' : '')
+                    : chat.title,
               }
             : chat
         )
       );
-    } catch (error) {
-      const errorMessage: Message = {
+
+      setIsLoading(true);
+
+      const [llmResult, ragResult] = await Promise.allSettled([
+        apiService.queryLLM(buildRequest(content)),
+        apiService.queryRAG(buildRequest(content)),
+      ]);
+
+      const llmMessage: Message = {
         id: generateId(),
-        content: 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
+        content: llmResult.status === 'fulfilled' ? llmResult.value : 'Erro ao obter resposta da LLM',
         isUser: false,
         timestamp: new Date(),
         createdAt: new Date().toISOString(),
         role: 'assistant',
+        source: 'llm',
+      };
+
+      const ragMessage: Message = {
+        id: generateId(),
+        content: ragResult.status === 'fulfilled' ? ragResult.value : 'Erro ao obter resposta do RAG',
+        isUser: false,
+        timestamp: new Date(),
+        createdAt: new Date().toISOString(),
+        role: 'assistant',
+        source: 'rag',
       };
 
       setChats(prev =>
@@ -173,27 +153,31 @@ export const useChat = () => {
           chat.id === currentChatId
             ? {
                 ...chat,
-                messages: [...chat.messages, errorMessage],
+                messages: [...chat.messages, llmMessage, ragMessage],
                 updatedAt: new Date(),
               }
             : chat
         )
       );
-    } finally {
+
       setIsLoading(false);
-    }
-  }, [currentChatId]);
+    },
+    [currentChatId]
+  );
 
   const getCurrentChat = useCallback(() => {
     return chats.find(chat => chat.id === currentChatId);
   }, [chats, currentChatId]);
 
-  const deleteChat = useCallback((chatId: string) => {
-    setChats(prev => prev.filter(chat => chat.id !== chatId));
-    if (currentChatId === chatId) {
-      setCurrentChatId(null);
-    }
-  }, [currentChatId]);
+  const deleteChat = useCallback(
+    (chatId: string) => {
+      setChats(prev => prev.filter(chat => chat.id !== chatId));
+      if (currentChatId === chatId) {
+        setCurrentChatId(null);
+      }
+    },
+    [currentChatId]
+  );
 
   return {
     chats,
