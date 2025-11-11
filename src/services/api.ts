@@ -24,24 +24,36 @@ const parseAnswer = (data: any): string => {
 export const apiService = {
   async queryRAG(question: string): Promise<string> {
     try {
+      console.log('[API] Sending RAG request:', question);
       const response = await axios.post(`${API_BASE_URL}/rag`, {
         question,
       });
+      console.log('[API] RAG response:', response.data);
       return parseAnswer(response.data);
     } catch (error) {
-      console.error('Error querying RAG:', error);
+      console.error('[API] RAG error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('[API] Response data:', error.response?.data);
+        console.error('[API] Response status:', error.response?.status);
+      }
       throw new Error('Falha ao consultar o sistema RAG');
     }
   },
 
   async queryLLM(question: string): Promise<string> {
     try {
+      console.log('[API] Sending LLM request:', question);
       const response = await axios.post(`${API_BASE_URL}/llm`, {
         question,
       });
+      console.log('[API] LLM response:', response.data);
       return parseAnswer(response.data);
     } catch (error) {
-      console.error('Error querying LLM:', error);
+      console.error('[API] LLM error:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('[API] Response data:', error.response?.data);
+        console.error('[API] Response status:', error.response?.status);
+      }
       throw new Error('Falha ao consultar o modelo de linguagem');
     }
   },
