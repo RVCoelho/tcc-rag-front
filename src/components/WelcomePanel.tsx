@@ -3,7 +3,7 @@ import { InputArea } from './InputArea';
 import './ChatArea.css';
 
 interface WelcomePanelProps {
-  onCreateChat?: (title?: string, initialMessage?: string) => string;
+  onCreateChat?: (title?: string, initialMessage?: string) => string | Promise<string>;
   onSendMessage?: (message: string) => void;
   isLoading?: boolean;
 }
@@ -25,11 +25,11 @@ export const WelcomePanel: React.FC<WelcomePanelProps> = ({
   );
 
   const [currentText, setCurrentText] = useState('');
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   const isCustom = currentText !== '' && !examples.includes(currentText);
 
-  const handleExampleClick = (ex: string) => {
+  const handleExampleClick = async (ex: string) => {
     if (isCustom) return;
     if (currentText === ex) {
       inputRef.current?.focus();

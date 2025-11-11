@@ -6,10 +6,10 @@ import { ComparisonView } from './ComparisonView';
 import './ChatArea.css';
 
 interface ChatAreaProps {
-  currentChat: Chat | undefined;
-  isLoading: boolean;
-  onSendMessage: (message: string) => void;
-  onCreateChat: (title?: string, initialMessage?: string) => string;
+  currentChat?: Chat;
+  isLoading?: boolean;
+  onSendMessage?: (text: string) => void | Promise<void>;
+  onCreateChat?: (title?: string, initialMessage?: string) => string | Promise<string>;
 }
 
 export const ChatArea: React.FC<ChatAreaProps> = ({
@@ -68,7 +68,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({
       {currentChat.messages.length === 0 ? (
         <WelcomePanel onSendMessage={onSendMessage} isLoading={isLoading} />
       ) : (
-        <ComparisonView messages={currentChat.messages} isLoading={isLoading} />
+        <ComparisonView messages={currentChat.messages} isLoading={isLoading ?? false} />
       )}
 
       {currentChat && currentChat.messages.length > 0 && (

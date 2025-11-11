@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Send } from 'lucide-react';
 
 interface InputAreaProps {
-  onSendMessage?: (message: string) => void;
-  onCreateChat?: (title?: string, initialMessage?: string) => string;
+  onSendMessage?: (text: string) => void | Promise<void>;
+  onCreateChat?: (title?: string, initialMessage?: string) => string | Promise<string>;
   isLoading?: boolean;
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
-  inputRef?: React.RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
+  inputRef?: React.RefObject<HTMLTextAreaElement | HTMLInputElement | null>;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
@@ -41,19 +41,19 @@ export const InputArea: React.FC<InputAreaProps> = ({
     setInternalValue(v);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = (controlledValue ?? internalValue).trim();
     if (!trimmed) return;
 
     if (onCreateChat && !onSendMessage) {
-      onCreateChat(undefined, trimmed);
+      await onCreateChat(undefined, trimmed);
       setValue('');
       return;
     }
 
     if (onSendMessage && !isLoading) {
-      onSendMessage(trimmed);
+      await onSendMessage(trimmed);
       setValue('');
       const el = textareaRef.current as HTMLTextAreaElement | null;
       if (el && el.tagName === 'TEXTAREA') el.style.height = 'auto';
@@ -73,7 +73,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
   const combinedRef = (el: HTMLTextAreaElement | HTMLInputElement | null) => {
     textareaRef.current = el;
     if (inputRef) {
-      (inputRef as React.RefObject<any>).current = el;
+      (inputRef as React.MutableRefObject<any>).current = el;
     }
   };
 
