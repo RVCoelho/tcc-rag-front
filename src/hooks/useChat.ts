@@ -47,41 +47,67 @@ export const useChat = () => {
       (async () => {
         setIsLoading(true);
 
-        // chama LLM e RAG em paralelo
-        const [llmResult, ragResult] = await Promise.allSettled([
-          apiService.queryLLM(buildRequest(initialMessage)),
-          apiService.queryRAG(buildRequest(initialMessage)),
-        ]);
+        try {
+          // chama LLM e RAG em paralelo
+          const [llmResult, ragResult] = await Promise.allSettled([
+            apiService.queryLLM(buildRequest(initialMessage)),
+            apiService.queryRAG(buildRequest(initialMessage)),
+          ]);
 
-        const llmMessage: Message = {
-          id: generateId(),
-          content: llmResult.status === 'fulfilled' ? llmResult.value : 'Erro ao obter resposta da LLM',
-          isUser: false,
-          timestamp: new Date(),
-          createdAt: new Date().toISOString(),
-          role: 'assistant',
-          source: 'llm',
-        };
+          const llmMessage: Message = {
+            id: generateId(),
+            content: llmResult.status === 'fulfilled' 
+              ? llmResult.value 
+              : `Erro ao obter resposta da LLM: ${llmResult.reason?.message || 'Erro desconhecido'}`,
+            isUser: false,
+            timestamp: new Date(),
+            createdAt: new Date().toISOString(),
+            role: 'assistant',
+            source: 'llm',
+          };
 
-        const ragMessage: Message = {
-          id: generateId(),
-          content: ragResult.status === 'fulfilled' ? ragResult.value : 'Erro ao obter resposta do RAG',
-          isUser: false,
-          timestamp: new Date(),
-          createdAt: new Date().toISOString(),
-          role: 'assistant',
-          source: 'rag',
-        };
+          const ragMessage: Message = {
+            id: generateId(),
+            content: ragResult.status === 'fulfilled' 
+              ? ragResult.value 
+              : `Erro ao obter resposta da RAG: ${ragResult.reason?.message || 'Erro desconhecido'}`,
+            isUser: false,
+            timestamp: new Date(),
+            createdAt: new Date().toISOString(),
+            role: 'assistant',
+            source: 'rag',
+          };
 
-        setChats(prev =>
-          prev.map(chat =>
-            chat.id === newChat.id
-              ? { ...chat, messages: [userMessage, llmMessage, ragMessage], updatedAt: new Date() }
-              : chat
-          )
-        );
+          setChats(prev =>
+            prev.map(chat =>
+              chat.id === newChat.id
+                ? { ...chat, messages: [userMessage, llmMessage, ragMessage], updatedAt: new Date() }
+                : chat
+            )
+          );
+        } catch (error) {
+          console.error('Error in createNewChat:', error);
+          
+          const errorMessage: Message = {
+            id: generateId(),
+            content: `Erro crítico: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+            isUser: false,
+            timestamp: new Date(),
+            createdAt: new Date().toISOString(),
+            role: 'assistant',
+            source: 'llm',
+          };
 
-        setIsLoading(false);
+          setChats(prev =>
+            prev.map(chat =>
+              chat.id === newChat.id
+                ? { ...chat, messages: [userMessage, errorMessage], updatedAt: new Date() }
+                : chat
+            )
+          );
+        } finally {
+          setIsLoading(false);
+        }
       })();
     }
 
@@ -123,44 +149,74 @@ export const useChat = () => {
 
       setIsLoading(true);
 
-      const [llmResult, ragResult] = await Promise.allSettled([
-        apiService.queryLLM(buildRequest(content)),
-        apiService.queryRAG(buildRequest(content)),
-      ]);
+      try {
+        const [llmResult, ragResult] = await Promise.allSettled([
+          apiService.queryLLM(buildRequest(content)),
+          apiService.queryRAG(buildRequest(content)),
+        ]);
 
-      const llmMessage: Message = {
-        id: generateId(),
-        content: llmResult.status === 'fulfilled' ? llmResult.value : 'Erro ao obter resposta da LLM',
-        isUser: false,
-        timestamp: new Date(),
-        createdAt: new Date().toISOString(),
-        role: 'assistant',
-        source: 'llm',
-      };
+        const llmMessage: Message = {
+          id: generateId(),
+          content: llmResult.status === 'fulfilled' 
+            ? llmResult.value 
+            : `Erro ao obter resposta da LLM: ${llmResult.reason?.message || 'Erro desconhecido'}`,
+          isUser: false,
+          timestamp: new Date(),
+          createdAt: new Date().toISOString(),
+          role: 'assistant',
+          source: 'llm',
+        };
 
-      const ragMessage: Message = {
-        id: generateId(),
-        content: ragResult.status === 'fulfilled' ? ragResult.value : 'Erro ao obter resposta do RAG',
-        isUser: false,
-        timestamp: new Date(),
-        createdAt: new Date().toISOString(),
-        role: 'assistant',
-        source: 'rag',
-      };
+        const ragMessage: Message = {
+          id: generateId(),
+          content: ragResult.status === 'fulfilled' 
+            ? ragResult.value 
+            : `Erro ao obter resposta da RAG: ${ragResult.reason?.message || 'Erro desconhecido'}`,
+          isUser: false,
+          timestamp: new Date(),
+          createdAt: new Date().toISOString(),
+          role: 'assistant',
+          source: 'rag',
+        };
 
-      setChats(prev =>
-        prev.map(chat =>
-          chat.id === currentChatId
-            ? {
-                ...chat,
-                messages: [...chat.messages, llmMessage, ragMessage],
-                updatedAt: new Date(),
-              }
-            : chat
-        )
-      );
+        setChats(prev =>
+          prev.map(chat =>
+            chat.id === currentChatId
+              ? {
+                  ...chat,
+                  messages: [...chat.messages, llmMessage, ragMessage],
+                  updatedAt: new Date(),
+                }
+              : chat
+          )
+        );
+      } catch (error) {
+        console.error('Error in sendMessage:', error);
+        
+        const errorMessage: Message = {
+          id: generateId(),
+          content: `Erro crítico: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+          isUser: false,
+          timestamp: new Date(),
+          createdAt: new Date().toISOString(),
+          role: 'assistant',
+          source: 'llm',
+        };
 
-      setIsLoading(false);
+        setChats(prev =>
+          prev.map(chat =>
+            chat.id === currentChatId
+              ? {
+                  ...chat,
+                  messages: [...chat.messages, errorMessage],
+                  updatedAt: new Date(),
+                }
+              : chat
+          )
+        );
+      } finally {
+        setIsLoading(false);
+      }
     },
     [currentChatId]
   );
